@@ -1,6 +1,6 @@
 {
   "name": "SkillCraft",
-  "description": "Plataforma moderna de aprendizaje basado en proyectos reales con mentor personal de IA, retos, niveles, comunidad y certificados.",
+  "description": "Aprende a programar con Code Quest (400+ niveles gamificados), tutor NPC interactivo, proyectos de producción, mentor personal de IA y certificados.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

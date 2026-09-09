@@ -44,6 +44,7 @@ fun HomeScreen(
     onOpenAssessment: () -> Unit,
     onOpenMentor: () -> Unit,
     onOpenCatalog: () -> Unit,
+    onOpenGame: () -> Unit = {},
     onCompleteDailyChallenge: (String) -> Unit = {},
     onOpenOnboarding: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -353,6 +354,76 @@ fun HomeScreen(
                         imageVector = Icons.Default.ChevronRight,
                         contentDescription = "Ir",
                         tint = TechSecondary
+                    )
+                }
+            }
+        }
+
+        // 400 Levels Game Banner: Code Quest & Byte NPC
+        item {
+            Surface(
+                shape = RoundedCornerShape(18.dp),
+                color = MaterialTheme.colorScheme.surface,
+                border = androidx.compose.foundation.BorderStroke(1.5.dp, Brush.horizontalGradient(listOf(TechAccentGold, TechPrimary))),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onOpenGame() }
+                    .testTag("open_game_quest_banner")
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(52.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(Brush.linearGradient(listOf(Color(0xFF6366F1), Color(0xFF8B5CF6)))),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.SportsEsports,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(30.dp)
+                        )
+                    }
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "Code Quest: 400+ Niveles",
+                                fontWeight = FontWeight.Black,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = TechAccentGold
+                            ) {
+                                Text(
+                                    text = "JUEGO",
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = Color.Black,
+                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                                )
+                            }
+                        }
+                        Text(
+                            text = "Aprende jugando con Byte, tu tutor robot. Resuelve retos, supera mundos y celebra cada victoria con confeti.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Icon(
+                        imageVector = Icons.Default.PlayCircle,
+                        contentDescription = "Jugar",
+                        tint = TechAccentGold,
+                        modifier = Modifier.size(28.dp)
                     )
                 }
             }

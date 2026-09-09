@@ -75,6 +75,30 @@ class SkillCraftViewModel(application: Application) : AndroidViewModel(applicati
     private val _userFeedbackNotice = MutableStateFlow<String?>(null)
     val userFeedbackNotice: StateFlow<String?> = _userFeedbackNotice.asStateFlow()
 
+    // Game 400 Levels Mode State
+    private val _gameUnlockedLevel = MutableStateFlow(1)
+    val gameUnlockedLevel: StateFlow<Int> = _gameUnlockedLevel.asStateFlow()
+
+    private val _gameCompletedLevels = MutableStateFlow<Map<Int, Int>>(emptyMap())
+    val gameCompletedLevels: StateFlow<Map<Int, Int>> = _gameCompletedLevels.asStateFlow()
+
+    fun completeGameLevel(level: Int, stars: Int, xp: Int) {
+        viewModelScope.launch {
+            val updated = _gameCompletedLevels.value.toMutableMap()
+            val prevStars = updated[level] ?: 0
+            updated[level] = maxOf(prevStars, stars)
+            _gameCompletedLevels.value = updated
+
+            val nextLevel = (level + 1).coerceAtMost(400)
+            if (nextLevel > _gameUnlockedLevel.value) {
+                _gameUnlockedLevel.value = nextLevel
+            }
+
+            repository.awardXp(xp)
+            _userFeedbackNotice.value = "¡Nivel $level completado! Byte celebra tu logro: +$xp XP."
+        }
+    }
+
     fun dismissNotice() {
         _userFeedbackNotice.value = null
     }

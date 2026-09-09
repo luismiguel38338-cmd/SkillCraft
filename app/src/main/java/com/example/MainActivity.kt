@@ -55,6 +55,10 @@ fun SkillCraftApp(viewModel: SkillCraftViewModel = viewModel()) {
     val selectedBillingPlan by viewModel.selectedBillingPlan.collectAsStateWithLifecycle()
     val selectedSandboxOutcome by viewModel.selectedSandboxOutcome.collectAsStateWithLifecycle()
 
+    // Game 400 Levels States
+    val gameUnlockedLevel by viewModel.gameUnlockedLevel.collectAsStateWithLifecycle()
+    val gameCompletedLevels by viewModel.gameCompletedLevels.collectAsStateWithLifecycle()
+
     var currentTab by remember { mutableStateOf(NavTab.HOME) }
     var isProjectDetailOpen by remember { mutableStateOf(false) }
 
@@ -143,8 +147,21 @@ fun SkillCraftApp(viewModel: SkillCraftViewModel = viewModel()) {
                             onOpenAssessment = { showAssessmentDialog = true },
                             onOpenMentor = { currentTab = NavTab.AI_MENTOR },
                             onOpenCatalog = { currentTab = NavTab.CATALOG },
+                            onOpenGame = { currentTab = NavTab.GAME },
                             onCompleteDailyChallenge = { id -> viewModel.completeDailyChallenge(id) },
                             onOpenOnboarding = { showOnboardingDialog = true }
+                        )
+
+                        NavTab.GAME -> CodeQuestScreen(
+                            currentUnlockedLevel = gameUnlockedLevel,
+                            completedLevels = gameCompletedLevels,
+                            onCompleteLevel = { lvl, stars, xp ->
+                                viewModel.completeGameLevel(lvl, stars, xp)
+                            },
+                            onAskAiForHelp = { prompt ->
+                                currentTab = NavTab.AI_MENTOR
+                                viewModel.askMentor(prompt, null, com.example.data.remote.MentorPedagogicalMode.HINTS)
+                            }
                         )
 
                         NavTab.CATALOG -> CatalogScreen(

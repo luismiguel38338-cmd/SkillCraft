@@ -25,8 +25,9 @@ import com.example.ui.theme.TechSecondary
 
 enum class NavTab(val title: String) {
     HOME("Ruta"),
-    CATALOG("Catálogo"),
+    GAME("Juego"),
     AI_MENTOR("Mentor IA"),
+    CATALOG("Catálogo"),
     COMMUNITY("Comunidad"),
     PROFILE("Perfil")
 }
@@ -216,11 +217,36 @@ fun SkillCraftBottomNavigation(
                     contentDescription = "Ruta"
                 )
             },
-            label = { Text("Ruta", fontSize = 11.sp) },
+            label = { Text("Ruta", fontSize = 10.sp) },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = TechPrimary,
                 selectedTextColor = TechPrimary,
                 indicatorColor = TechPrimary.copy(alpha = 0.15f)
+            )
+        )
+
+        NavigationBarItem(
+            selected = currentTab == NavTab.GAME,
+            onClick = { onTabSelected(NavTab.GAME) },
+            icon = {
+                BadgedBox(
+                    badge = {
+                        Badge(containerColor = TechAccentGold) {
+                            Text("400+", fontSize = 8.sp, color = Color.Black, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                ) {
+                    Icon(
+                        imageVector = if (currentTab == NavTab.GAME) Icons.Filled.SportsEsports else Icons.Outlined.SportsEsports,
+                        contentDescription = "Juego 400+ Niveles"
+                    )
+                }
+            },
+            label = { Text("Juego", fontSize = 10.sp) },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = TechAccentGold,
+                selectedTextColor = TechAccentGold,
+                indicatorColor = TechAccentGold.copy(alpha = 0.2f)
             )
         )
 
@@ -233,7 +259,7 @@ fun SkillCraftBottomNavigation(
                     contentDescription = "Catálogo"
                 )
             },
-            label = { Text("Catálogo", fontSize = 11.sp) },
+            label = { Text("Catálogo", fontSize = 10.sp) },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = TechPrimary,
                 selectedTextColor = TechPrimary,
@@ -248,7 +274,7 @@ fun SkillCraftBottomNavigation(
                 BadgedBox(
                     badge = {
                         Badge(containerColor = TechSecondary) {
-                            Text("IA", fontSize = 9.sp, color = Color.Black, fontWeight = FontWeight.Bold)
+                            Text("IA", fontSize = 8.sp, color = Color.Black, fontWeight = FontWeight.Bold)
                         }
                     }
                 ) {
@@ -258,7 +284,7 @@ fun SkillCraftBottomNavigation(
                     )
                 }
             },
-            label = { Text("Mentor IA", fontSize = 11.sp) },
+            label = { Text("Mentor", fontSize = 10.sp) },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = TechSecondary,
                 selectedTextColor = TechSecondary,
@@ -275,7 +301,7 @@ fun SkillCraftBottomNavigation(
                     contentDescription = "Comunidad"
                 )
             },
-            label = { Text("Comunidad", fontSize = 11.sp) },
+            label = { Text("Social", fontSize = 10.sp) },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = TechPrimary,
                 selectedTextColor = TechPrimary,
@@ -292,7 +318,7 @@ fun SkillCraftBottomNavigation(
                     contentDescription = "Perfil"
                 )
             },
-            label = { Text("Perfil", fontSize = 11.sp) },
+            label = { Text("Perfil", fontSize = 10.sp) },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = TechPrimary,
                 selectedTextColor = TechPrimary,

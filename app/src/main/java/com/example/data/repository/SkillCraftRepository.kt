@@ -135,7 +135,7 @@ class SkillCraftRepository(
         }
     }
 
-    private suspend fun awardXp(amount: Int) {
+    suspend fun awardXp(amount: Int) {
         val profile = dao.getUserProfile().firstOrNull() ?: return
         var newXp = profile.currentXp + amount
         var newLevel = profile.level
