@@ -1,0 +1,71 @@
+name: Build SkillCraft Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-debug-apk:
+    name: Build & Export Debug APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'gradle'
+
+      - name: Grant Execute Permission for Gradlew
+        run: chmod +x gradlew
+
+      - name: Setup Keystore & Environment Variables
+        run: |
+          echo "=== Configuring build environment ==="
+          
+          # Restore debug.keystore from base64 if keystore is missing
+          if [ ! -f debug.keystore ] && [ -f debug.keystore.base64 ]; then
+            echo "Decoding debug.keystore from debug.keystore.base64..."
+            base64 -d debug.keystore.base64 > debug.keystore
+          fi
+
+          # Fallback generation of debug keystore if not found
+          if [ ! -f debug.keystore ]; then
+            echo "Generating fallback debug.keystore..."
+            keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          fi
+
+          # Ensure .env exists to satisfy secrets plugin
+          if [ ! -f .env ]; then
+            echo "Setting up .env configuration..."
+            cp .env.example .env
+          fi
+
+          # Optional injection of GEMINI_API_KEY from GitHub Repository Secrets
+          if [ -n "${{ secrets.GEMINI_API_KEY }}" ]; then
+            echo "Configuring GEMINI_API_KEY from repository secrets..."
+            echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
+          fi
+
+      - name: Compile Debug APK
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Verify APK Generation
+        run: |
+          echo "=== Verifying generated APK ==="
+          ls -lh app/build/outputs/apk/debug/
+
+      - name: Upload Debug APK as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SkillCraft-Debug-APK
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
