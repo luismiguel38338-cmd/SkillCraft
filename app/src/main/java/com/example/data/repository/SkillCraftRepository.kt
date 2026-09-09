@@ -246,6 +246,31 @@ class SkillCraftRepository(
         dao.insertOrUpdateProfile(profile.copy(isPro = true))
     }
 
+    suspend fun toggleProPlanDemo(): Boolean {
+        val profile = dao.getUserProfile().firstOrNull() ?: return false
+        val newPro = !profile.isPro
+        dao.insertOrUpdateProfile(profile.copy(isPro = newPro))
+        return newPro
+    }
+
+    suspend fun completeDailyChallenge(challengeId: String): Boolean {
+        val challenge = dao.getChallengeById(challengeId) ?: return false
+        if (challenge.isCompleted) return false
+
+        dao.updateChallenge(challenge.copy(isCompleted = true))
+        awardXp(challenge.xpReward)
+
+        val profile = dao.getUserProfile().firstOrNull()
+        if (profile != null) {
+            dao.insertOrUpdateProfile(
+                profile.copy(
+                    streakDays = maxOf(profile.streakDays, 6)
+                )
+            )
+        }
+        return true
+    }
+
     suspend fun updateProfileInfo(name: String, title: String, track: String) {
         val profile = dao.getUserProfile().firstOrNull() ?: return
         dao.insertOrUpdateProfile(

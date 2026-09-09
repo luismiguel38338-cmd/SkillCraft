@@ -153,6 +153,26 @@ class SkillCraftViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
+    fun toggleProPlanDemo() {
+        viewModelScope.launch {
+            val isPro = repository.toggleProPlanDemo()
+            _userFeedbackNotice.value = if (isPro) {
+                "🌟 Modo DEMO: Plan PRO activado con éxito. Proyectos avanzados desbloqueados."
+            } else {
+                "ℹ️ Modo DEMO: Has vuelto al Plan Estándar."
+            }
+        }
+    }
+
+    fun completeDailyChallenge(challengeId: String) {
+        viewModelScope.launch {
+            val completed = repository.completeDailyChallenge(challengeId)
+            if (completed) {
+                _userFeedbackNotice.value = "🔥 ¡Reto completado! +80 XP sumados a tu progreso y racha protegida."
+            }
+        }
+    }
+
     fun updateProfile(name: String, title: String, track: String) {
         viewModelScope.launch {
             repository.updateProfileInfo(name, title, track)

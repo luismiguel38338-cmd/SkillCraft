@@ -39,6 +39,7 @@ fun ProfileScreen(
     onOpenAuthModal: () -> Unit,
     onOpenAssessmentModal: () -> Unit,
     onViewCertificate: (Certificate) -> Unit,
+    onOpenOnboarding: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -108,7 +109,7 @@ fun ProfileScreen(
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
-                    Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
                     Spacer(modifier = Modifier.height(14.dp))
 
                     // Stats Grid
@@ -340,16 +341,30 @@ fun ProfileScreen(
             }
         }
 
-        // Skill Assessment Retest button
+        // Actions: Tour & Assessment Retest
         item {
-            OutlinedButton(
-                onClick = onOpenAssessmentModal,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Icon(imageVector = Icons.Default.AutoAwesome, contentDescription = null, tint = TechSecondary)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Reevaluar Nivel y Adaptar Ruta con IA")
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(
+                    onClick = onOpenOnboarding,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("replay_onboarding_button"),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(imageVector = Icons.Default.Explore, contentDescription = null, tint = TechPrimary)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Repetir Tour de Bienvenida")
+                }
+
+                OutlinedButton(
+                    onClick = onOpenAssessmentModal,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(imageVector = Icons.Default.AutoAwesome, contentDescription = null, tint = TechSecondary)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Reevaluar Nivel y Adaptar Ruta con IA")
+                }
             }
         }
     }

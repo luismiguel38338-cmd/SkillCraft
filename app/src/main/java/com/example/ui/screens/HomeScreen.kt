@@ -43,6 +43,8 @@ fun HomeScreen(
     onOpenAssessment: () -> Unit,
     onOpenMentor: () -> Unit,
     onOpenCatalog: () -> Unit,
+    onCompleteDailyChallenge: (String) -> Unit = {},
+    onOpenOnboarding: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -81,20 +83,33 @@ fun HomeScreen(
                             )
                         }
 
-                        // Avatar Circle
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(CircleShape)
-                                .background(TechPrimary.copy(alpha = 0.2f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = (userProfile?.name?.firstOrNull() ?: 'U').toString(),
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = TechPrimary
-                            )
+                        // Tour Icon Button + Avatar Circle
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(
+                                onClick = onOpenOnboarding,
+                                modifier = Modifier.testTag("tour_button")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Explore,
+                                    contentDescription = "Tour de Bienvenida",
+                                    tint = TechPrimary
+                                )
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .clip(CircleShape)
+                                    .background(TechPrimary.copy(alpha = 0.2f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = (userProfile?.name?.firstOrNull() ?: 'U').toString(),
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TechPrimary
+                                )
+                            }
                         }
                     }
 
@@ -367,25 +382,44 @@ fun HomeScreen(
             Surface(
                 shape = RoundedCornerShape(14.dp),
                 color = MaterialTheme.colorScheme.surface,
-                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)),
-                modifier = Modifier.fillMaxWidth()
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    if (challenge.isCompleted) TechSuccess.copy(alpha = 0.4f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = !challenge.isCompleted) {
+                        onCompleteDailyChallenge(challenge.id)
+                    }
+                    .testTag("daily_challenge_${challenge.id}")
             ) {
                 Row(
                     modifier = Modifier.padding(14.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = if (challenge.isCompleted) Icons.Default.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
-                        contentDescription = null,
-                        tint = if (challenge.isCompleted) TechSuccess else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(22.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
+                    IconButton(
+                        onClick = {
+                            if (!challenge.isCompleted) {
+                                onCompleteDailyChallenge(challenge.id)
+                            }
+                        },
+                        enabled = !challenge.isCompleted,
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (challenge.isCompleted) Icons.Default.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
+                            contentDescription = if (challenge.isCompleted) "Reto Completado" else "Completar Reto",
+                            tint = if (challenge.isCompleted) TechSuccess else TechPrimary,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = challenge.title,
                             style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (challenge.isCompleted) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = challenge.description,
@@ -395,14 +429,14 @@ fun HomeScreen(
                     }
                     Surface(
                         shape = RoundedCornerShape(10.dp),
-                        color = TechAccentGold.copy(alpha = 0.15f)
+                        color = if (challenge.isCompleted) TechSuccess.copy(alpha = 0.15f) else TechAccentGold.copy(alpha = 0.15f)
                     ) {
                         Text(
-                            text = "+${challenge.xpReward} XP",
+                            text = if (challenge.isCompleted) "✓ Completado" else "+${challenge.xpReward} XP",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = TechAccentGold,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            color = if (challenge.isCompleted) TechSuccess else TechAccentGold,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
                         )
                     }
                 }

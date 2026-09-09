@@ -57,6 +57,9 @@ interface SkillCraftDao {
     @Query("SELECT * FROM daily_challenges")
     fun getDailyChallenges(): Flow<List<DailyChallenge>>
 
+    @Query("SELECT * FROM daily_challenges WHERE id = :id LIMIT 1")
+    suspend fun getChallengeById(id: String): DailyChallenge?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertChallenges(challenges: List<DailyChallenge>)
 

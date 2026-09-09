@@ -11,6 +11,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -55,6 +56,7 @@ fun SkillCraftApp(viewModel: SkillCraftViewModel = viewModel()) {
     var showProDialog by remember { mutableStateOf(false) }
     var showAssessmentDialog by remember { mutableStateOf(false) }
     var showAuthDialog by remember { mutableStateOf(false) }
+    var showOnboardingDialog by rememberSaveable { mutableStateOf(false) }
     var taskToSubmit by remember { mutableStateOf<ProjectTask?>(null) }
     var taskExplanationData by remember { mutableStateOf<Pair<String, String>?>(null) }
     var certificateToView by remember { mutableStateOf<Certificate?>(null) }
@@ -134,7 +136,9 @@ fun SkillCraftApp(viewModel: SkillCraftViewModel = viewModel()) {
                             },
                             onOpenAssessment = { showAssessmentDialog = true },
                             onOpenMentor = { currentTab = NavTab.AI_MENTOR },
-                            onOpenCatalog = { currentTab = NavTab.CATALOG }
+                            onOpenCatalog = { currentTab = NavTab.CATALOG },
+                            onCompleteDailyChallenge = { id -> viewModel.completeDailyChallenge(id) },
+                            onOpenOnboarding = { showOnboardingDialog = true }
                         )
 
                         NavTab.CATALOG -> CatalogScreen(
@@ -171,7 +175,8 @@ fun SkillCraftApp(viewModel: SkillCraftViewModel = viewModel()) {
                             onOpenProModal = { showProDialog = true },
                             onOpenAuthModal = { showAuthDialog = true },
                             onOpenAssessmentModal = { showAssessmentDialog = true },
-                            onViewCertificate = { cert -> certificateToView = cert }
+                            onViewCertificate = { cert -> certificateToView = cert },
+                            onOpenOnboarding = { showOnboardingDialog = true }
                         )
                     }
                 }
@@ -252,6 +257,17 @@ fun SkillCraftApp(viewModel: SkillCraftViewModel = viewModel()) {
                 viewModel.createCommunityPost(content, activeProject?.title ?: "SkillCraft", codeSnippet)
             },
             onDismiss = { showCreatePostDialog = false }
+        )
+    }
+
+    // Interactive Onboarding Dialog
+    if (showOnboardingDialog) {
+        OnboardingDialog(
+            onDismiss = { showOnboardingDialog = false },
+            onStartAssessment = {
+                showOnboardingDialog = false
+                showAssessmentDialog = true
+            }
         )
     }
 }
