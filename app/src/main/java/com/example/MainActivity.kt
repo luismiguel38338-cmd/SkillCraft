@@ -49,6 +49,12 @@ fun SkillCraftApp(viewModel: SkillCraftViewModel = viewModel()) {
     val isAiThinking by viewModel.isAiThinking.collectAsStateWithLifecycle()
     val feedbackNotice by viewModel.userFeedbackNotice.collectAsStateWithLifecycle()
 
+    // Billing & Pro Subscription States
+    val paymentState by viewModel.paymentState.collectAsStateWithLifecycle()
+    val billingEnvironment by viewModel.billingEnvironment.collectAsStateWithLifecycle()
+    val selectedBillingPlan by viewModel.selectedBillingPlan.collectAsStateWithLifecycle()
+    val selectedSandboxOutcome by viewModel.selectedSandboxOutcome.collectAsStateWithLifecycle()
+
     var currentTab by remember { mutableStateOf(NavTab.HOME) }
     var isProjectDetailOpen by remember { mutableStateOf(false) }
 
@@ -155,8 +161,8 @@ fun SkillCraftApp(viewModel: SkillCraftViewModel = viewModel()) {
                             chatMessages = chatMessages,
                             activeProject = activeProject,
                             isAiThinking = isAiThinking,
-                            onSendMessage = { query ->
-                                viewModel.askMentor(query, activeProject?.id)
+                            onSendMessage = { query, mode ->
+                                viewModel.askMentor(query, activeProject?.id, mode)
                             },
                             onClearChat = { viewModel.clearChatHistory() },
                             onOpenAssessment = { showAssessmentDialog = true }
@@ -184,11 +190,20 @@ fun SkillCraftApp(viewModel: SkillCraftViewModel = viewModel()) {
         }
     }
 
-    // Pro Subscription Modal
+    // Pro Subscription Checkout Modal (Strict Verification & No Demo Bypass)
     if (showProDialog) {
-        ProPlanDialog(
+        ProSubscriptionCheckoutDialog(
             isCurrentlyPro = userProfile?.isPro == true,
-            onUpgrade = { viewModel.upgradeToPro() },
+            paymentState = paymentState,
+            billingEnvironment = billingEnvironment,
+            selectedPlan = selectedBillingPlan,
+            selectedSandboxOutcome = selectedSandboxOutcome,
+            onSelectPlan = { viewModel.selectBillingPlan(it) },
+            onSetEnvironment = { viewModel.setBillingEnvironment(it) },
+            onSetSandboxOutcome = { viewModel.setSandboxOutcome(it) },
+            onStartCheckout = { viewModel.startSubscriptionCheckout() },
+            onRestorePurchases = { viewModel.restorePurchases() },
+            onResetState = { viewModel.resetPaymentState() },
             onDismiss = { showProDialog = false }
         )
     }

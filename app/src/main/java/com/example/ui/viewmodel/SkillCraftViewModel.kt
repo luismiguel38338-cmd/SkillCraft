@@ -3,6 +3,7 @@ package com.example.ui.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.data.billing.*
 import com.example.data.local.AppDatabase
 import com.example.data.model.*
 import com.example.data.repository.SkillCraftRepository
@@ -13,14 +14,22 @@ import kotlinx.coroutines.launch
 class SkillCraftViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository: SkillCraftRepository
+    val billingManager = BillingManager()
 
     init {
         val database = AppDatabase.getInstance(application)
         repository = SkillCraftRepository(database.skillCraftDao())
         viewModelScope.launch {
             repository.initializeDataIfEmpty()
+            // Verify subscription status upon opening the application
+            verifySubscriptionOnAppStart()
         }
     }
+
+    val billingEnvironment: StateFlow<BillingEnvironment> = billingManager.billingEnvironment
+    val paymentState: StateFlow<PaymentState> = billingManager.paymentState
+    val selectedBillingPlan: StateFlow<SubscriptionPlan> = billingManager.selectedPlan
+    val selectedSandboxOutcome: StateFlow<SandboxTestOutcome> = billingManager.selectedSandboxOutcome
 
     val userProfile: StateFlow<UserProfile?> = repository.userProfile
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
@@ -82,12 +91,16 @@ class SkillCraftViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    fun askMentor(question: String, relatedProjectId: String? = null) {
+    fun askMentor(
+        question: String,
+        relatedProjectId: String? = null,
+        mode: com.example.data.remote.MentorPedagogicalMode = com.example.data.remote.MentorPedagogicalMode.EXPLANATION
+    ) {
         if (question.isBlank()) return
         viewModelScope.launch {
             _isAiThinking.value = true
             try {
-                repository.askMentor(question, relatedProjectId)
+                repository.askMentor(question, relatedProjectId, mode)
             } finally {
                 _isAiThinking.value = false
             }
@@ -146,21 +159,74 @@ class SkillCraftViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    fun upgradeToPro() {
+    // Billing & Subscription Management (Strict Verification Flow - No Demo Bypass)
+    fun selectBillingPlan(plan: SubscriptionPlan) {
+        billingManager.selectPlan(plan)
+    }
+
+    fun setBillingEnvironment(env: BillingEnvironment) {
+        billingManager.setEnvironment(env)
+    }
+
+    fun setSandboxOutcome(outcome: SandboxTestOutcome) {
+        billingManager.setSandboxOutcome(outcome)
+    }
+
+    fun resetPaymentState() {
+        billingManager.resetPaymentState()
+    }
+
+    fun startSubscriptionCheckout() {
         viewModelScope.launch {
-            repository.upgradeToPro()
-            _userFeedbackNotice.value = "🎉 ¡Felicidades! Eres miembro SkillCraft PRO."
+            val result = billingManager.startCheckout()
+            when (result) {
+                is PaymentState.Success -> {
+                    repository.activateVerifiedPro(
+                        orderId = result.orderId,
+                        purchaseToken = result.purchaseToken,
+                        planTitle = result.planTitle
+                    )
+                    _userFeedbackNotice.value = "🎉 ¡Suscripción PRO confirmada por el proveedor! Beneficios activados."
+                }
+                is PaymentState.Pending -> {
+                    // Critical: Keep PRO locked until payment confirmation is finalized by the provider
+                    _userFeedbackNotice.value = "⚠️ Transacción en verificación bancaria. PRO se mantendrá bloqueado hasta confirmación definitiva."
+                }
+                is PaymentState.Error -> {
+                    _userFeedbackNotice.value = "❌ No se pudo completar el cobro: ${result.errorMessage}"
+                }
+                is PaymentState.Cancelled -> {
+                    _userFeedbackNotice.value = "ℹ️ Operación cancelada por el usuario."
+                }
+                else -> Unit
+            }
         }
     }
 
-    fun toggleProPlanDemo() {
+    fun restorePurchases() {
         viewModelScope.launch {
-            val isPro = repository.toggleProPlanDemo()
-            _userFeedbackNotice.value = if (isPro) {
-                "🌟 Modo DEMO: Plan PRO activado con éxito. Proyectos avanzados desbloqueados."
-            } else {
-                "ℹ️ Modo DEMO: Has vuelto al Plan Estándar."
+            val result = billingManager.restorePurchases()
+            if (result is PaymentState.Success) {
+                repository.activateVerifiedPro(
+                    orderId = result.orderId,
+                    purchaseToken = result.purchaseToken,
+                    planTitle = result.planTitle
+                )
+                _userFeedbackNotice.value = "✅ Suscripción PRO restaurada y validada con éxito."
+            } else if (result is PaymentState.Error) {
+                _userFeedbackNotice.value = "ℹ️ ${result.errorMessage}"
             }
+        }
+    }
+
+    private suspend fun verifySubscriptionOnAppStart() {
+        // Enforce subscription verification when the application starts or user profile loads
+        val isLocallyPro = userProfile.firstOrNull()?.isPro == true
+        val isProviderActive = billingManager.isSubscriptionActive()
+
+        // If local profile had PRO marked without an active provider subscription or was expired, lock PRO
+        if (isLocallyPro && !isProviderActive && billingManager.billingEnvironment.value == BillingEnvironment.PRODUCTION_GOOGLE_PLAY) {
+            repository.deactivatePro()
         }
     }
 

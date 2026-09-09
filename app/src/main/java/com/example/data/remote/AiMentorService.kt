@@ -5,6 +5,33 @@ import com.example.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+enum class MentorPedagogicalMode(
+    val title: String,
+    val iconEmoji: String,
+    val instruction: String
+) {
+    EXPLANATION(
+        title = "Explicación",
+        iconEmoji = "📚",
+        instruction = "Modo Explicación: Desglosa conceptos teóricos y de arquitectura paso a paso, usando analogías claras y mostrando fragmentos de código bien explicados."
+    ),
+    HINTS(
+        title = "Pistas Socráticas",
+        iconEmoji = "💡",
+        instruction = "Modo Pistas (Método Socrático): NO des la solución completa ni el código final resuelto a la primera. Plantea preguntas que guíen al alumno a razonar el error o qué falta, y dale pistas incrementales."
+    ),
+    DEBUG(
+        title = "Debug",
+        iconEmoji = "🐛",
+        instruction = "Modo Debug: Analiza la traza o el error lógico. Explica la causa raíz (NPE, concurrencia, Main Thread bloqueado, ciclo de vida) y cómo diagnosticarlo."
+    ),
+    OPTIMIZATION(
+        title = "Optimización",
+        iconEmoji = "⚡",
+        instruction = "Modo Optimización: Evalúa la eficiencia algorítmica, recomposiciones en Compose, índices en bases de datos y principios de Clean Architecture."
+    )
+}
+
 class AiMentorService {
 
     private val geminiService = RetrofitClient.geminiService
@@ -21,17 +48,22 @@ class AiMentorService {
         return key.isNotBlank() && key != "MY_GEMINI_API_KEY" && !key.contains("placeholder", ignoreCase = true)
     }
 
-    suspend fun askMentor(question: String, projectContext: String? = null): String = withContext(Dispatchers.IO) {
+    suspend fun askMentor(
+        question: String,
+        projectContext: String? = null,
+        mode: MentorPedagogicalMode = MentorPedagogicalMode.EXPLANATION
+    ): String = withContext(Dispatchers.IO) {
         val apiKey = getApiKey()
         if (isKeyValid(apiKey)) {
             try {
                 val promptText = buildString {
-                    append("Eres el Mentor de IA de SkillCraft, una academia de programación moderna basada en proyectos reales.\n")
+                    append("Eres el Mentor de IA de SkillCraft, una plataforma moderna de ingeniería de software.\n")
+                    append("MODO PEDAGÓGICO ACTIVO: ${mode.instruction}\n")
                     if (!projectContext.isNullOrBlank()) {
-                        append("Contexto del proyecto activo del estudiante: $projectContext\n")
+                        append("Contexto del proyecto activo: $projectContext\n")
                     }
-                    append("Pregunta o duda del estudiante: $question\n")
-                    append("Responde con tono motivador, didáctico, explicando conceptos claramente con ejemplos concisos de código cuando sea pertinente.")
+                    append("Pregunta del estudiante: $question\n")
+                    append("Responde con formato Markdown claro, respetando estrictamente el modo pedagógico seleccionado.")
                 }
 
                 val request = GenerateContentRequest(
@@ -54,7 +86,7 @@ class AiMentorService {
         }
 
         // High quality pedagogical fallback
-        return@withContext generateSimulatedMentorResponse(question, projectContext)
+        return@withContext generateSimulatedMentorResponse(question, projectContext, mode)
     }
 
     suspend fun explainTask(taskTitle: String, instructions: String, codeHint: String): String = withContext(Dispatchers.IO) {
@@ -188,60 +220,101 @@ class AiMentorService {
         return match?.groupValues?.get(1)?.toIntOrNull()?.coerceIn(1, 10) ?: 9
     }
 
-    private fun generateSimulatedMentorResponse(question: String, projectContext: String?): String {
+    private fun generateSimulatedMentorResponse(
+        question: String,
+        projectContext: String?,
+        mode: MentorPedagogicalMode
+    ): String {
         val q = question.lowercase()
+
+        // Mode: HINTS (Socratic Method)
+        if (mode == MentorPedagogicalMode.HINTS) {
+            return """
+                💡 **Pistas Socráticas del Mentor**:
+                No te daré el código resuelto de inmediato, pero reflexionemos juntos sobre:
+                
+                1. **¿Qué tipo de datos recibe tu función o Composable?** Revisa si la firma espera un parámetro mutable o un estado inmutable.
+                2. **¿Quién tiene la responsabilidad de modificar el estado?** Recuerda que en arquitectura unidireccional (UDF), la UI sólo emite eventos al ViewModel.
+                3. **Pregunta clave para reflexionar**: Si modificas el estado directamente en un Composable en lugar de elevarlo (*State Hoisting*), ¿qué crees que pasará durante la siguiente recomposición?
+                
+                Prueba a aislar la variable en el ViewModel con un `MutableStateFlow` y exponla como `asStateFlow()`. ¡Cuéntame qué resultado obtienes!
+            """.trimIndent()
+        }
+
+        // Mode: DEBUG
+        if (mode == MentorPedagogicalMode.DEBUG) {
+            return """
+                🐛 **Diagnóstico y Depuración del Mentor**:
+                Analizando el problema: "$question".
+                
+                🔍 **Causas Raíz Comunes**:
+                • **Bloqueo del Hilo Principal**: Si estás haciendo I/O, Room o llamadas de red dentro de `LaunchedEffect(Unit)` sin `Dispatchers.IO`, la UI congelará o arrojará ANR.
+                • **Nullability en Compose**: ¿Alguna propiedad de tu modelo es opcional? Asegúrate de proveer valores por defecto como `val title: String = ""`.
+                • **Ciclo de Vida de Coroutines**: Usa siempre `viewModelScope` o `rememberCoroutineScope()` para no dejar coroutines huérfanas al cerrar la pantalla.
+                
+                🛠️ **Estrategia de Debug**:
+                Agrega un log justo antes del fallo: `Log.d("SkillCraftDebug", "Valor actual = ${'$'}miVariable")` y revisa Logcat filtrando por `SkillCraftDebug`.
+            """.trimIndent()
+        }
+
+        // Mode: OPTIMIZATION
+        if (mode == MentorPedagogicalMode.OPTIMIZATION) {
+            return """
+                ⚡ **Análisis de Optimización y Rendimiento**:
+                Revisión de arquitectura para "$question":
+                
+                1. **Eficiencia en Jetpack Compose**:
+                   • Evita crear lambdas o listas pesadas dentro del cuerpo del Composable. Usa `remember { ... }`.
+                   • Usa `derivedStateOf` si un valor depende de otro estado que cambia con alta frecuencia (como scroll offset).
+                   • Agrega `key = { it.id }` en cada ítem de `LazyColumn` para optimizar la animación y reciclado de vistas.
+                
+                2. **Optimización en Room Database**:
+                   • Coloca índices `@Index` en columnas que uses frecuentemente en clausulas `WHERE`.
+                   • Usa `Flow<List<Entity>>` para que la UI sólo reciba deltas cuando la tabla cambie.
+            """.trimIndent()
+        }
+
+        // Mode: EXPLANATION (Default)
         return when {
             q.contains("error") || q.contains("bug") || q.contains("falla") || q.contains("crash") -> {
                 """
-                🔍 **Diagnóstico del Mentor IA**:
-                Los errores más frecuentes en este tipo de desarrollo suelen deberse a:
-                1. **NullPointer o valores nulos no inicializados**: Verifica que los observadores StateFlow o LiveData cuenten con un valor inicial seguro.
-                2. **Llamadas a red o base de datos en el hilo principal**: Asegúrate de envolver la operación en `withContext(Dispatchers.IO)`.
-                3. **Dependencias no resueltas**: Revisa que tus versiones en el catálogo estén sincronizadas.
-
-                💡 **Tip para depurar**: Coloca un log con `Log.d("SkillCraft", "Estado actual: ...")` justo antes de la línea conflictiva para verificar tus datos.
+                🔍 **Explicación del Mentor IA**:
+                Los fallos en esta etapa suelen originarse en la sincronización entre el estado y la vista:
+                1. **Observadores de Estado**: Comprueba que la UI consuma el flujo con `collectAsStateWithLifecycle()` para respetar el ciclo de vida del Activity.
+                2. **Operaciones de Red/IO**: Siempre deben ejecutarse bajo un despachador apropiado (`Dispatchers.IO`).
+                3. **Manejo de Estados de UI**: Asegúrate de tener un `sealed class` con estados `Loading`, `Success` y `Error`.
                 """.trimIndent()
             }
             q.contains("arquitectura") || q.contains("mvvm") || q.contains("clean") -> {
                 """
-                🏛️ **Estructura Recomendada por el Mentor**:
-                Para este proyecto recomendamos **Clean Architecture + MVVM**:
-                • **Capa de Datos**: Room DAO, Clientes Retrofit y Repositorio único.
-                • **Capa de Dominio/Lógica**: Casos de uso específicos y validadores.
-                • **Capa de Presentación**: ViewModels que emiten `StateFlow<UiState>` y Composables sin lógica de negocio.
-
-                Esto hace que tu código sea 100% testeable, modular y preparado para crecer.
-                """.trimIndent()
-            }
-            q.contains("pro") || q.contains("plan") || q.contains("premium") -> {
-                """
-                💎 **Ventajas del Plan SkillCraft Pro**:
-                Con el Plan Pro tienes acceso ilimitado a:
-                • Proyectos avanzados de nivel empresarial (Microservicios, Modelos IA, Web3).
-                • Mentoría ilimitada en streaming con Gemini 3.5.
-                • Code reviews en profundidad línea por línea con análisis de vulnerabilidades.
-                • Certificados oficiales verificados con código único y enlace compartible en LinkedIn.
+                🏛️ **Explicación de Arquitectura Limpia**:
+                Para este desarrollo implementamos **Clean Architecture + MVVM**:
+                • **Capa de Datos**: Room DAO, Clientes Retrofit y Repositorio único como fuente de verdad.
+                • **Capa de Dominio/Lógica**: Casos de uso específicos y validadores de negocio.
+                • **Capa de Presentación**: ViewModels que emiten `StateFlow<UiState>` y Composables puros.
+                
+                Esto garantiza modularidad, desacoplamiento y 100% de cobertura en pruebas unitarias con JVM y Robolectric.
                 """.trimIndent()
             }
             q.contains("compose") || q.contains("ui") || q.contains("diseño") -> {
                 """
-                🎨 **Buenas Prácticas de UI en Jetpack Compose**:
-                • **State Hoisting**: Eleva el estado hacia el ViewModel y pasa funciones lambda para eventos (`onValueChange`).
-                • **Recomposición Eficiente**: Utiliza `derivedStateOf` para cálculos derivados y `key` en listas Lazy.
-                • **Espaciado y M3**: Mantén una cuadrícula de 8.dp y utiliza tokens de color de `MaterialTheme.colorScheme`.
+                🎨 **Principios Modernos de Jetpack Compose**:
+                • **State Hoisting**: Eleva el estado mutable al ViewModel y provee callbacks de eventos a los hijos.
+                • **Material 3 Tokens**: Usa `MaterialTheme.colorScheme` y `MaterialTheme.typography` para soporte automático de modo oscuro y dynamic color.
+                • **Accesibilidad**: Asegúrate de que los botones tengan al menos 48.dp de altura táctil interactiva.
                 """.trimIndent()
             }
             else -> {
                 """
-                🤖 **Respuesta del Mentor IA**:
-                Muy buena consulta sobre $question. 
-
-                En el desarrollo moderno de software, la clave está en descomponer el problema en componentes pequeños y verificables:
-                1. Formula primero qué entrada espera tu módulo y cuál es el resultado deseado.
-                2. Escribe una implementación mínima funcional antes de optimizar.
-                3. Añade manejo defensivo para casos borde.
-
-                ${if (!projectContext.isNullOrBlank()) "Para tu proyecto actual ($projectContext), te sugiero revisar la tarea en curso y apoyarte en las pistas de código." else "¿Te gustaría que profundicemos en algún detalle específico del código?"}
+                📚 **Explicación Didáctica**:
+                Excelente consulta sobre "$question".
+                
+                En el desarrollo moderno, la mejor técnica consiste en descomponer la solución en pequeños pasos:
+                1. **Contrato de Interfaz**: Modela primero los datos y el estado esperado.
+                2. **Implementación Mínima**: Construye la lógica funcional sin preocuparte aún por optimizaciones prematuras.
+                3. **Refactorización y Pruebas**: Aplica patrones limpios y verifica con tests automatizados.
+                
+                ${if (!projectContext.isNullOrBlank()) "Para tu proyecto actual ($projectContext), apóyate en el editor de código interactivo y ejecuta el Test Runner para validar cada paso." else "¿Deseas profundizar en algún fragmento de código específico?"}
                 """.trimIndent()
             }
         }

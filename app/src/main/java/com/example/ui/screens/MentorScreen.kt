@@ -24,24 +24,24 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.AiChatMessage
 import com.example.data.model.Project
+import com.example.data.remote.MentorPedagogicalMode
 import com.example.ui.theme.TechPrimary
 import com.example.ui.theme.TechSecondary
 import com.example.ui.theme.TechSuccess
-import kotlinx.coroutines.launch
 
 @Composable
 fun MentorScreen(
     chatMessages: List<AiChatMessage>,
     activeProject: Project?,
     isAiThinking: Boolean,
-    onSendMessage: (String) -> Unit,
+    onSendMessage: (String, MentorPedagogicalMode) -> Unit,
     onClearChat: () -> Unit,
     onOpenAssessment: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var inputText by remember { mutableStateOf("") }
+    var selectedMode by remember { mutableStateOf(MentorPedagogicalMode.EXPLANATION) }
     val listState = rememberLazyListState()
-    val scope = rememberCoroutineScope()
 
     val suggestedQuestions = listOf(
         "¿Cómo organizo Clean Architecture en este proyecto?",
@@ -68,58 +68,112 @@ fun MentorScreen(
             tonalElevation = 4.dp,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(38.dp)
-                            .clip(CircleShape)
-                            .background(TechSecondary),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.SmartToy,
-                            contentDescription = "Mentor",
-                            tint = Color.Black,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "Mentor IA Personal",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .clip(CircleShape)
-                                    .background(TechSuccess)
+            Column {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(CircleShape)
+                                .background(TechSecondary),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.SmartToy,
+                                contentDescription = "Mentor",
+                                tint = Color.Black,
+                                modifier = Modifier.size(22.dp)
                             )
                         }
-                        Text(
-                            text = if (activeProject != null) "Contexto: ${activeProject.title}" else "Asistente pedagógico disponible",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1
-                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "Mentor IA Personal",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .clip(CircleShape)
+                                        .background(TechSuccess)
+                                    )
+                            }
+                            Text(
+                                text = if (activeProject != null) "Contexto: ${activeProject.title}" else "Asistente pedagógico disponible",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1
+                            )
+                        }
+                    }
+
+                    IconButton(
+                        onClick = onClearChat,
+                        modifier = Modifier.testTag("clear_chat_button")
+                    ) {
+                        Icon(imageVector = Icons.Default.DeleteOutline, contentDescription = "Limpiar Chat", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
 
-                IconButton(
-                    onClick = onClearChat,
-                    modifier = Modifier.testTag("clear_chat_button")
+                // Pedagogical Mode Selector Tabs
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Icon(imageVector = Icons.Default.DeleteOutline, contentDescription = "Limpiar Chat", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    MentorPedagogicalMode.values().forEach { mode ->
+                        val isSelected = selectedMode == mode
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (isSelected) TechSecondary else MaterialTheme.colorScheme.surfaceVariant,
+                            border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)),
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { selectedMode = mode }
+                                .testTag("mentor_mode_${mode.name.lowercase()}")
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(vertical = 6.dp, horizontal = 4.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "${mode.iconEmoji} ${mode.title}",
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (isSelected) Color.Black else MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Brief explanation of active mode
+                Surface(
+                    color = TechSecondary.copy(alpha = 0.08f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = when (selectedMode) {
+                            MentorPedagogicalMode.EXPLANATION -> "📚 Modo Explicación: Desglose conceptual paso a paso con ejemplos."
+                            MentorPedagogicalMode.HINTS -> "💡 Modo Pistas: Orientación socrática guiada sin dar la solución directa."
+                            MentorPedagogicalMode.DEBUG -> "🐛 Modo Debug: Análisis de causa raíz, trazas de error y excepciones."
+                            MentorPedagogicalMode.OPTIMIZATION -> "⚡ Modo Optimización: Rendimiento, recomposiciones y Clean Architecture."
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                    )
                 }
             }
         }
@@ -140,7 +194,7 @@ fun MentorScreen(
                         if (prompt.contains("Evaluar mi nivel")) {
                             onOpenAssessment()
                         } else {
-                            onSendMessage(prompt)
+                            onSendMessage(prompt, selectedMode)
                         }
                     }
                 ) {
@@ -238,7 +292,7 @@ fun MentorScreen(
                         if (inputText.isNotBlank() && !isAiThinking) {
                             val textToSend = inputText
                             inputText = ""
-                            onSendMessage(textToSend)
+                            onSendMessage(textToSend, selectedMode)
                         }
                     },
                     enabled = inputText.isNotBlank() && !isAiThinking,

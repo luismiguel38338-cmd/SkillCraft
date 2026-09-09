@@ -29,6 +29,7 @@ import com.example.R
 import com.example.data.model.DailyChallenge
 import com.example.data.model.Project
 import com.example.data.model.UserProfile
+import com.example.ui.components.LearningRoadmapSection
 import com.example.ui.theme.TechAccentGold
 import com.example.ui.theme.TechPrimary
 import com.example.ui.theme.TechSecondary
@@ -355,6 +356,15 @@ fun HomeScreen(
                     )
                 }
             }
+        }
+
+        // Modular Learning Roadmap (7 Progressive Modules)
+        item {
+            LearningRoadmapSection(
+                onOpenLesson = { module ->
+                    onOpenMentor()
+                }
+            )
         }
 
         // Daily Challenges Section

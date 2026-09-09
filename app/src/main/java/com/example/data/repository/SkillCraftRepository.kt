@@ -156,7 +156,11 @@ class SkillCraftRepository(
         )
     }
 
-    suspend fun askMentor(question: String, relatedProjectId: String? = null): String {
+    suspend fun askMentor(
+        question: String,
+        relatedProjectId: String? = null,
+        mode: com.example.data.remote.MentorPedagogicalMode = com.example.data.remote.MentorPedagogicalMode.EXPLANATION
+    ): String {
         // Save user message
         dao.insertChatMessage(
             AiChatMessage(
@@ -175,7 +179,7 @@ class SkillCraftRepository(
             }
         }
 
-        val answer = aiMentorService.askMentor(question, context)
+        val answer = aiMentorService.askMentor(question, context, mode)
 
         // Save AI response
         dao.insertChatMessage(
@@ -241,16 +245,22 @@ class SkillCraftRepository(
         dao.insertCommunityPost(newPost)
     }
 
-    suspend fun upgradeToPro() {
+    suspend fun activateVerifiedPro(orderId: String, purchaseToken: String, planTitle: String) {
         val profile = dao.getUserProfile().firstOrNull() ?: return
         dao.insertOrUpdateProfile(profile.copy(isPro = true))
+
+        // Record official activation event in chat messages
+        dao.insertChatMessage(
+            AiChatMessage(
+                role = "assistant",
+                content = "🎉 **¡Suscripción PRO Confirmada y Verificada!**\n\nTu orden `$orderId` ($planTitle) fue verificada por la pasarela de pagos. Has desbloqueado:\n- Acceso a proyectos avanzados de Cloud, Microservicios y Agentes con Gemini.\n- Mentoría IA contextual sin cuotas diarias.\n- Pruebas automatizadas y code reviews profundos.\n- Certificados profesionales verificables con código QR."
+            )
+        )
     }
 
-    suspend fun toggleProPlanDemo(): Boolean {
-        val profile = dao.getUserProfile().firstOrNull() ?: return false
-        val newPro = !profile.isPro
-        dao.insertOrUpdateProfile(profile.copy(isPro = newPro))
-        return newPro
+    suspend fun deactivatePro() {
+        val profile = dao.getUserProfile().firstOrNull() ?: return
+        dao.insertOrUpdateProfile(profile.copy(isPro = false))
     }
 
     suspend fun completeDailyChallenge(challengeId: String): Boolean {
